@@ -9,6 +9,17 @@ Chrono timer1;
 Chrono timer2;
 Chrono timer3;
 Chrono timer4;
+Chrono timer5;
+
+#include "FastLED.h"
+#define LED_NUM      100
+#define LED_TYPE   WS2812B
+#define LED_COLOR_ORDER   GRB
+#define LED_DATA_PIN       16
+#define LED_VOLTS          3
+#define LED_MAX_MA       200
+CRGBArray<LED_NUM> leds;
+
 
 #include "LittleFS.h"
 
@@ -46,6 +57,11 @@ void setup() {
   digitalWrite(LED_BUILTIN, LOW);
   delay(100);
 
+//  FastLED.setMaxPowerInVoltsAndMilliamps(LED_VOLTS, LED_MAX_MA);
+  FastLED.addLeds<LED_TYPE,LED_DATA_PIN,LED_COLOR_ORDER>(leds, LED_NUM)
+    .setCorrection(TypicalLEDStrip);
+  FastLED.setBrightness(10);
+
   Wire.begin();
 
   u8g2.begin();
@@ -71,12 +87,13 @@ void setup() {
   posX=random(0, gfx->width());
   posY=random(0, gfx->height());
 
-  servo.attach(16);
+//  servo.attach(16);
 
   timer1.start();
   timer2.start();
   timer3.start();
   timer4.start();
+  timer5.start();
 
   Serial.println("booted.");
 }
@@ -85,6 +102,7 @@ void tickOledGlitch();
 void tickServo1();
 void tickLedStrip();
 void tickOledMini();
+void tickLedSeq();
 
 void loop() {
 
@@ -92,6 +110,20 @@ void loop() {
   tickServo1();
   tickLedStrip();
   tickOledMini();
+  tickLedSeq();
+}
+
+int led=0;
+void tickLedSeq()
+{
+  if (timer5.elapsed() < 500) {
+    return;
+  }
+  timer5.restart();
+ 
+  leds[led] = CRGB::White;
+  led++;
+  FastLED.show();
 }
 
 void tickOledMini()
