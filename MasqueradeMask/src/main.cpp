@@ -1,38 +1,51 @@
 #include <Arduino.h>
 #include "Wire.h"
 
-#include "Servo.h"
-Servo servo;
+#include <ESP32Servo.h>
+Servo servo1;
+Servo servo2;
+Servo servo3;
+Servo servo4;
 
 #include "Chrono.h"
+Chrono timer0;
 Chrono timer1;
 Chrono timer2;
 Chrono timer3;
 Chrono timer4;
 Chrono timer5;
+Chrono timer6;
 
 #include "FastLED.h"
-#define LED_NUM      100
+#define LED_DATA_PIN       33
+#define LED_NUM      150
 #define LED_TYPE   WS2812B
 #define LED_COLOR_ORDER   GRB
-#define LED_DATA_PIN       16
 #define LED_VOLTS          3
 #define LED_MAX_MA       200
 CRGBArray<LED_NUM> leds;
 
+#define PIN_TFT_DC 14
+#define PIN_TFT_CS DF_GFX_CS
+
+#define PIN_LED_1 17
+#define PIN_LED_2 16
+#define PIN_LED_3 4
+
+#define PIN_SERVO1 27
+#define PIN_SERVO2 25
+#define PIN_SERVO3 32
+#define PIN_SERVO4 12
 
 #include "LittleFS.h"
 
 #include <U8g2lib.h>
 U8G2_SSD1306_64X32_1F_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, SCL, SDA);
 
-#include "PCF8575.h"
-PCF8575 pcf8575(0x20);
-
 #include <Arduino_GFX_Library.h>
 /* More dev device declaration: https://github.com/moononournation/Arduino_GFX/wiki/Dev-Device-Declaration */
 /* More data bus class: https://github.com/moononournation/Arduino_GFX/wiki/Data-Bus-Class */
-Arduino_DataBus *bus = new Arduino_ESP8266SPI(0, DF_GFX_CS);
+Arduino_DataBus *bus = new Arduino_ESP32SPI(PIN_TFT_DC, PIN_TFT_CS);
 
 /* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
 Arduino_GFX *gfx = new Arduino_GC9A01(bus, 2 /* RST */, 0 /* rotation */, true /* IPS */);
@@ -45,17 +58,24 @@ int scaleY=2;
 void setup() {
   Serial.begin(9600);
   Serial.println("booting...");
-
+/*
   if(!LittleFS.begin()){
     Serial.println("An Error has occurred while mounting LittleFS");
     return;
   }
-
+*/
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
   delay(1000);
   digitalWrite(LED_BUILTIN, LOW);
   delay(100);
+
+  pinMode(PIN_LED_1, OUTPUT);
+  pinMode(PIN_LED_2, OUTPUT);
+  pinMode(PIN_LED_3, OUTPUT);
+  digitalWrite(PIN_LED_1, LOW);
+  digitalWrite(PIN_LED_2, LOW);
+  digitalWrite(PIN_LED_3, LOW);
 
 //  FastLED.setMaxPowerInVoltsAndMilliamps(LED_VOLTS, LED_MAX_MA);
   FastLED.addLeds<LED_TYPE,LED_DATA_PIN,LED_COLOR_ORDER>(leds, LED_NUM)
@@ -71,11 +91,6 @@ void setup() {
   u8g2.drawStr(0, 14, "World...");
   u8g2.sendBuffer();
 
-  pcf8575.begin();
-	pcf8575.pinMode(1, OUTPUT);
-	pcf8575.pinMode(3, OUTPUT);
-	pcf8575.pinMode(4, OUTPUT);
-
   gfx->begin();
   gfx->fillScreen(WHITE);
   gfx->setCursor(20, 20);
@@ -87,31 +102,78 @@ void setup() {
   posX=random(0, gfx->width());
   posY=random(0, gfx->height());
 
-//  servo.attach(16);
+  pinMode(PIN_SERVO1, OUTPUT);
+  pinMode(PIN_SERVO2, OUTPUT);
+  pinMode(PIN_SERVO3, OUTPUT);
+  pinMode(PIN_SERVO4, OUTPUT);
 
+  servo1.attach(PIN_SERVO1);
+  servo2.attach(PIN_SERVO2);
+  servo3.attach(PIN_SERVO3);
+  servo4.attach(PIN_SERVO4);
+
+  timer0.start();
   timer1.start();
   timer2.start();
   timer3.start();
   timer4.start();
   timer5.start();
+  timer6.start();
 
   Serial.println("booted.");
 }
 
 void tickOledGlitch();
 void tickServo1();
-void tickLedStrip();
 void tickOledMini();
 void tickLedSeq();
+void tickLed1();
+void tickDebugLed();
 
 void loop() {
-
+  tickDebugLed();
   tickOledGlitch();
   tickServo1();
-  tickLedStrip();
   tickOledMini();
   tickLedSeq();
+  tickLed1();
 }
+
+void tickDebugLed()
+{
+  if (timer0.elapsed() < 500) return;
+
+  timer0.restart();
+  digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
+}
+
+int led1Brightness = 0;
+int led2Brightness = 0;
+int led3Brightness = 0;
+void tickLed1()
+{
+  if (timer6.elapsed() < 10) {
+    return;
+  }
+  timer6.restart();
+
+  if (led1Brightness < 255) {
+    led1Brightness++;
+  } else if (led2Brightness < 255) {
+    led2Brightness++;
+  } else if (led3Brightness < 255) {
+    led3Brightness++;
+  } else {
+    led1Brightness = 0;
+    led2Brightness = 0;
+    led3Brightness = 0;
+  }
+
+  analogWrite(PIN_LED_1, led1Brightness);
+  analogWrite(PIN_LED_2, led2Brightness);
+  analogWrite(PIN_LED_3, led3Brightness);
+}
+
 
 int led=0;
 void tickLedSeq()
@@ -123,6 +185,11 @@ void tickLedSeq()
  
   leds[led] = CRGB::White;
   led++;
+
+  if (led > LED_NUM) {
+    led = 0;
+    FastLED.clear();
+  }
   FastLED.show();
 }
 
@@ -138,19 +205,6 @@ void tickOledMini()
   sprintf(buf, "%lu", millis() / 1000);
   u8g2.drawStr(0, 7, buf);
   u8g2.sendBuffer();
-}
-
-int ledState = false;
-void tickLedStrip()
-{
-  if (timer1.elapsed() < 500) {
-    return;
-  }
-
-  Serial.println("blink");
-  timer1.restart();
-  ledState = !ledState;
-  pcf8575.digitalWrite(1, ledState ? HIGH : LOW);
 }
 
 void tickOledGlitch()
@@ -191,16 +245,21 @@ void tickServo1()
   }
 
   timer3.restart();
-  servoState++;
-  servoState = (servoState > 3) ? 0 : servoState;
 
-  if (servoState == 0) {
-    servo.write(0);
-  } else if (servoState == 1) {
-    servo.write(60);
+  if (servoState == 1) {
+    servo1.write(0);
+    servo2.write(0);
+    servo3.write(0);
+    servo4.write(0);
   } else if (servoState == 2) {
-    servo.write(120);
+    servo1.write(180);
   } else if (servoState == 3) {
-    servo.write(180);
+    servo2.write(180);
+  } else if (servoState == 4) {
+    servo3.write(180);
+  } else if (servoState == 5) {
+    servo4.write(180);
+    servoState = 0;
   }
+  servoState++;
 }
