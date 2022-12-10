@@ -1,11 +1,8 @@
 #include <Arduino.h>
-#include "Wire.h"
 
-#include <ESP32Servo.h>
-Servo servo1;
-Servo servo2;
-Servo servo3;
-Servo servo4;
+// Peripherals
+#include "Wire.h"
+#include "LittleFS.h"
 
 #include "FastLED.h"
 #define LED_DATA_PIN       33
@@ -26,6 +23,9 @@ CRGB leds[LED_NUM];
 #define PIN_LED_3 4
 
 // PWM Servo Pins
+#include <ESP32Servo.h>
+#define SERVO_COUNT 4
+Servo servo[SERVO_COUNT];
 #define PIN_SERVO1 27
 #define PIN_SERVO2 25
 #define PIN_SERVO3 32
@@ -43,26 +43,50 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(PIN_TFT_DC, PIN_TFT_CS);
 /* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
 Arduino_GFX *gfx = new Arduino_GC9A01(bus, 2 /* RST */, 0 /* rotation */, true /* IPS */);
 
+// Component Abstractions -------------------------------------
+#include "part/fins.h"
+Fins fins(servo, SERVO_COUNT);
+
+#include "part/led-strip.h"
+LedStrip ledStrip(leds, LED_NUM);
+
+#include "part/led-series.h"
+LedSeries stripLeft(&ledStrip, 10, 20);
+LedSeries stripRight(&ledStrip, 20, 30);
+
+#include "part/led-single.h"
+LedSingle lensLed1(&ledStrip, 1);
+LedSingle lensLed2(&ledStrip, 2);
+LedSingle lensLed3(&ledStrip, 3);
+
+#include "part/pwm-led.h"
+PwmLed batteryGlow(PIN_LED_1);
+PwmLed eyeGlow(PIN_LED_2);
+PwmLed finsGlow(PIN_LED_3);
+
+#include "part/display-eye.h"
+DisplayEye displayEye(gfx);
+
+#include "part/display-mini.h"
+DisplayMini displayMini(&u8g2);
+
+// Routines ---------------------------------------------------
 #include "routines/tests.h"
 TestRoutines testRoutines(
-  BUILTIN_LED,
-  PIN_LED_1,
-  PIN_LED_2,
-  PIN_LED_3,
-  &u8g2,
-  gfx,
-  &servo1,
-  &servo2,
-  &servo3,
-  &servo4,
-  leds,
-  LED_NUM
+  &lensLed1,
+  &lensLed2,
+  &lensLed3,
+  &batteryGlow,
+  &eyeGlow,
+  &finsGlow,
+  &stripLeft,
+  &stripRight,
+  &fins,
+  &displayMini,
+  &displayEye
 );
 
-// Filesystem
-#include "LittleFS.h"
-
-// Webserver
+// Webserver --------------------------------------------------
 #include "ESPAsyncWebServer.h"
 AsyncWebServer webServer(80);
 
@@ -99,42 +123,62 @@ WifiService wifiService(&dnsServer);
 CaptiveRequestHandler captiveRequestHandler;
 
 void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
+
   Serial.begin(9600);
   Serial.println("booting...");
+
+  delay(1000);
 /*
   if(!LittleFS.begin()){
     Serial.println("An Error has occurred while mounting LittleFS");
     return;
   }
 */
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(1000);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(100);
 
-  pinMode(PIN_LED_1, OUTPUT);
-  pinMode(PIN_LED_2, OUTPUT);
-  pinMode(PIN_LED_3, OUTPUT);
-  digitalWrite(PIN_LED_1, LOW);
-  digitalWrite(PIN_LED_2, LOW);
-  digitalWrite(PIN_LED_3, LOW);
+  // Peripherals
+  pinMode(PIN_SERVO1, OUTPUT);
+  pinMode(PIN_SERVO2, OUTPUT);
+  pinMode(PIN_SERVO3, OUTPUT);
+  pinMode(PIN_SERVO4, OUTPUT);
+
+  servo[0].attach(PIN_SERVO1);
+  servo[1].attach(PIN_SERVO2);
+  servo[2].attach(PIN_SERVO3);
+  servo[3].attach(PIN_SERVO4);
 
 //  FastLED.setMaxPowerInVoltsAndMilliamps(LED_VOLTS, LED_MAX_MA);
   FastLED.addLeds<LED_TYPE,LED_DATA_PIN,LED_COLOR_ORDER>(leds, LED_NUM)
     .setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(10);
+  ledStrip.begin();
 
+  // I2C
   Wire.begin();
 
+  // Displays
   u8g2.begin();
+  gfx->begin();
+
+
+  // Components
+  fins.begin();
+  ledStrip.begin();
+  lensLed1.begin();
+  lensLed2.begin();
+  lensLed3.begin();
+  displayEye.begin();
+  displayMini.begin();
+  stripLeft.begin();
+  stripRight.begin();
+
   u8g2.clearBuffer();					// clear the internal memory
   u8g2.setFont(u8g2_font_profont11_tf);	// choose a suitable font
   u8g2.drawStr(0, 7, "Hello");	 // write something to the internal memory
   u8g2.drawStr(0, 14, "World...");
   u8g2.sendBuffer();
 
-  gfx->begin();
   gfx->fillScreen(WHITE);
   gfx->setCursor(20, 20);
   gfx->setTextColor(BLACK);
@@ -142,17 +186,10 @@ void setup() {
   gfx->println("BOOTING");
   delay(1000);
 
-  pinMode(PIN_SERVO1, OUTPUT);
-  pinMode(PIN_SERVO2, OUTPUT);
-  pinMode(PIN_SERVO3, OUTPUT);
-  pinMode(PIN_SERVO4, OUTPUT);
-
-  servo1.attach(PIN_SERVO1);
-  servo2.attach(PIN_SERVO2);
-  servo3.attach(PIN_SERVO3);
-  servo4.attach(PIN_SERVO4);
-
   testRoutines.begin();
+
+  // Wifi + DNS
+  wifiService.begin();
 
   // Captive Portal
   webServer.addHandler(&captiveRequestHandler).setFilter(ON_AP_FILTER);//only when requested from AP
@@ -168,21 +205,33 @@ void setup() {
   indexPage.attach(&webServer);
   notFoundHandler.attach(&webServer);
 
-  // Wifi + DNS
-  wifiService.begin();
-
   // Webserver
   webServer.begin();
 
+  // Done
   Serial.println("booted.");
+  digitalWrite(LED_BUILTIN, LOW);
+}
+
+#include "Chrono.h"
+Chrono debugLedTimer;
+
+void tickDebugLed()
+{
+    if (debugLedTimer.elapsed() < 1000) {
+      return;
+    }
+
+    debugLedTimer.restart();
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 }
 
 void loop() {
+  tickDebugLed();
   dnsServer.processNextRequest();
-  testRoutines.tickDebugLed();
-  testRoutines.tickOledGlitch();
-//  testRoutines.tickServo1();
-  testRoutines.tickOledMini();
-  testRoutines.tickLedSeq();
-  testRoutines.tickLed1();
+  testRoutines.tick();
+
+  // Component ticks
+  displayMini.tick();
+  ledStrip.tick();
 }

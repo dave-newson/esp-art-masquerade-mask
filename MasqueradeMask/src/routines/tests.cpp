@@ -3,38 +3,36 @@
 #include "Arduino.h"
 
 TestRoutines::TestRoutines(
-    uint debugLed,
-    uint pwmLed1,
-    uint pwmLed2,
-    uint pwmLed3,
-    U8G2_SSD1306_64X32_1F_F_HW_I2C* _u8g2,
-    Arduino_GFX* _gfx,
-    Servo* _servo1,
-    Servo* _servo2,
-    Servo* _servo3,
-    Servo* _servo4,
-    CRGB* _leds,
-    uint _ledCount
+        LedSingle* _lensLed1,
+        LedSingle* _lensLed2,
+        LedSingle* _lensLed3,
+        PwmLed* _batteryGlow,
+        PwmLed* _eyeGlow,
+        PwmLed* _finsGlow,
+        LedSeries* _stripLeft,
+        LedSeries* _stripRight,
+        Fins* _fins,
+        DisplayMini* _displayMini,
+        DisplayEye* _displayEye
 )
 {
-    pinDebugLed = debugLed;
-    pinPwmLed1 = pwmLed1;
-    pinPwmLed2 = pwmLed2;
-    pinPwmLed3 = pwmLed3;
-    u8g2 = _u8g2;
-    gfx = _gfx;
-    servo1 = _servo1;
-    servo2 = _servo2;
-    servo3 = _servo3;
-    servo4 = _servo4;
-    leds = _leds;
-    ledCount = _ledCount;
+        lensLed1 = _lensLed1;
+        lensLed2 = _lensLed2;
+        lensLed3 = _lensLed3;
+        batteryGlow = _batteryGlow;
+        eyeGlow = _eyeGlow;
+        finsGlow = _finsGlow;
+        stripLeft = _stripLeft;
+        stripRight = _stripRight;
+        fins = _fins;
+        displayMini = _displayMini;
+        displayEye = _displayEye;
 }
 
 void TestRoutines::begin()
 {
-    posX=random(0, gfx->width());
-    posY=random(0, gfx->height());
+    posX=random(0, displayEye->getDriver()->width());
+    posY=random(0, displayEye->getDriver()->height());
 
     timer0.start();
     timer1.start();
@@ -45,70 +43,59 @@ void TestRoutines::begin()
     timer6.start();
 }
 
-void TestRoutines::tickDebugLed()
-{
-  if (timer0.elapsed() < 500) return;
 
-  timer0.restart();
-  digitalWrite(pinDebugLed, !digitalRead(pinDebugLed));
-}
-
-void TestRoutines::tickLed1()
+void TestRoutines::tickLeds()
 {
   if (timer6.elapsed() < 10) {
     return;
   }
   timer6.restart();
 
-  if (led1Brightness < 255) {
-    led1Brightness++;
-  } else if (led2Brightness < 255) {
-    led2Brightness++;
-  } else if (led3Brightness < 255) {
-    led3Brightness++;
+  if (batteryGlow->getBrightness() < 255) {
+    batteryGlow->setBrightness(batteryGlow->getBrightness() + 1);
+  } else if (eyeGlow->getBrightness() < 255) {
+    eyeGlow->setBrightness(eyeGlow->getBrightness() + 1);
+  } else if (finsGlow->getBrightness() < 255) {
+    finsGlow->setBrightness(finsGlow->getBrightness() + 1);
   } else {
-    led1Brightness = 0;
-    led2Brightness = 0;
-    led3Brightness = 0;
+    batteryGlow->setBrightness(0);
+    eyeGlow->setBrightness(0);
+    finsGlow->setBrightness(0);
   }
-
-  analogWrite(pinPwmLed1, led1Brightness);
-  analogWrite(pinPwmLed2, led2Brightness);
-  analogWrite(pinPwmLed3, led3Brightness);
 }
 
-void TestRoutines::tickLedSeq()
+void TestRoutines::tickLedStrip()
 {
   if (timer5.elapsed() < 500) {
     return;
   }
   timer5.restart();
- 
-  leds[led] = CRGB::White;
-  led++;
 
-  if (led > ledCount) {
-    led = 0;
-    FastLED.clear();
-  }
-  FastLED.show();
+    stripLeft->setColor(led, CRGB::White);
+    stripRight->setColor(led, CRGB::White);
+    led++;
+
+    if (led > stripLeft->getCount()) {
+        stripLeft->setAll(CRGB::Black);
+        stripRight->setAll(CRGB::Black);
+        led = 0;
+    }
 }
 
-void TestRoutines::tickOledMini()
+void TestRoutines::tickDisplayMini()
 {
   if (timer4.elapsed() < 100) {
     return;
   }
   timer4.restart();
 
-  u8g2->clearBuffer();					// clear the internal memory
+    displayMini->getDriver()->clearBuffer();					// clear the internal memory
   char buf[16];
   sprintf(buf, "%lu", millis() / 1000);
-  u8g2->drawStr(0, 7, buf);
-  u8g2->sendBuffer();
+  displayMini->getDriver()->drawStr(0, 7, buf);
 }
 
-void TestRoutines::tickOledGlitch()
+void TestRoutines::tickDisplayEye()
 {
   if (timer2.elapsed() < 50) {
     return;
@@ -122,23 +109,23 @@ void TestRoutines::tickOledGlitch()
   scaleY=max(scaleY, 2);
 
   posX+=random(-5, 5);
-  posX=min(posX, (int) gfx->width());
+  posX=min(posX, (int) displayEye->getDriver()->width());
   posX=max(posX, 0);
 
   posY+=random(-5, 5);
-  posY=min(posY, (int) gfx->height());
+  posY=min(posY, (int) displayEye->getDriver()->height());
   posY=max(posY, 0);
 
   timer2.restart();
-  gfx->fillScreen(random(0xffff));
-  gfx->setCursor(posX, posY);
-  gfx->setTextColor(random(0xffff), random(0xffff));
-  gfx->setTextSize(scaleX /* x scale */, scaleY /* y scale */, 4 /* pixel_margin */);
-  gfx->println("Hello World!");
+  displayEye->getDriver()->fillScreen(random(0xffff));
+  displayEye->getDriver()->setCursor(posX, posY);
+  displayEye->getDriver()->setTextColor(random(0xffff), random(0xffff));
+  displayEye->getDriver()->setTextSize(scaleX /* x scale */, scaleY /* y scale */, 4 /* pixel_margin */);
+  displayEye->getDriver()->println("Hello World!");
 }
 
 
-void TestRoutines::tickServo1()
+void TestRoutines::tickFins()
 {
   if (timer3.elapsed() < 1000) {
     return;
@@ -147,18 +134,15 @@ void TestRoutines::tickServo1()
   timer3.restart();
 
   if (servoState == 1) {
-    servo1->write(0);
-    servo2->write(0);
-    servo3->write(0);
-    servo4->write(0);
+    fins->setAllAngle(0);
   } else if (servoState == 2) {
-    servo1->write(180);
+    fins->setServoAngle(0, 180);
   } else if (servoState == 3) {
-    servo2->write(180);
+    fins->setServoAngle(1, 180);
   } else if (servoState == 4) {
-    servo3->write(180);
+    fins->setServoAngle(2, 180);
   } else if (servoState == 5) {
-    servo4->write(180);
+    fins->setServoAngle(3, 180);
     servoState = 0;
   }
   servoState++;
