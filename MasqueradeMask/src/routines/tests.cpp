@@ -29,7 +29,12 @@ TestRoutines::TestRoutines(
         displayEye = _displayEye;
 }
 
-void TestRoutines::begin()
+const char* TestRoutines::name()
+{
+    return "test";
+}
+
+void TestRoutines::setup()
 {
     posX=random(0, displayEye->getDriver()->width());
     posY=random(0, displayEye->getDriver()->height());

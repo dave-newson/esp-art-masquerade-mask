@@ -71,8 +71,13 @@ DisplayEye displayEye(gfx);
 DisplayMini displayMini(&u8g2);
 
 // Routines ---------------------------------------------------
+#include "routines/routines.h"
+#define ROUTINE_COUNT 2
+Routine* routines[ROUTINE_COUNT];
+RoutineController routineController(routines, ROUTINE_COUNT);
+
 #include "routines/tests.h"
-TestRoutines testRoutines(
+TestRoutines testRoutine(
   &lensLed1,
   &lensLed2,
   &lensLed3,
@@ -85,6 +90,9 @@ TestRoutines testRoutines(
   &displayMini,
   &displayEye
 );
+
+#include "routines/routine-two.h"
+RoutineTwo routineTwo(&displayMini);
 
 // Webserver --------------------------------------------------
 #include "ESPAsyncWebServer.h"
@@ -161,7 +169,6 @@ void setup() {
   u8g2.begin();
   gfx->begin();
 
-
   // Components
   fins.begin();
   ledStrip.begin();
@@ -184,9 +191,13 @@ void setup() {
   gfx->setTextColor(BLACK);
   gfx->setTextSize(3);
   gfx->println("BOOTING");
-  delay(1000);
 
-  testRoutines.begin();
+  // Routines
+  routines[0] = &testRoutine;
+  routines[1] = &routineTwo;
+
+  routineController.begin();
+  routineController.setRoutine(&testRoutine);
 
   // Wifi + DNS
   wifiService.begin();
@@ -218,7 +229,7 @@ Chrono debugLedTimer;
 
 void tickDebugLed()
 {
-    if (debugLedTimer.elapsed() < 1000) {
+    if (debugLedTimer.elapsed() < 100) {
       return;
     }
 
@@ -226,12 +237,21 @@ void tickDebugLed()
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 }
 
+Chrono timer;
+
 void loop() {
   tickDebugLed();
   dnsServer.processNextRequest();
-  testRoutines.tick();
-
+  routineController.tick();
+ 
   // Component ticks
   displayMini.tick();
   ledStrip.tick();
+
+  if (timer.elapsed() > 10000) {
+    timer.restart();
+    timer.stop();
+
+    routineController.setRoutine("test-two");
+  }
 }

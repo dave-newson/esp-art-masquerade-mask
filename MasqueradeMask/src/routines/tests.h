@@ -1,5 +1,6 @@
 #pragma once
 
+#include "routines.h"
 #include "Chrono.h"
 #include "../part/display-eye.h"
 #include "../part/display-mini.h"
@@ -8,7 +9,7 @@
 #include "../part/led-single.h"
 #include "../part/pwm-led.h"
 
-class TestRoutines
+class TestRoutines : public Routine
 {
 public:
     TestRoutines(
@@ -24,7 +25,9 @@ public:
         DisplayMini* displayMini,
         DisplayEye* displayEye
     );
-    void begin();
+
+    const char* name();
+    void setup();
 
     void tick() {
         tickDisplayEye();

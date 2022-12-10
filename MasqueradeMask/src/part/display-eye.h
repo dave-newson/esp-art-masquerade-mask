@@ -14,10 +14,6 @@ public:
         driver->fillScreen(0xffff);
     };
 
-    void tick() {
-
-    }
-
     Arduino_GFX* getDriver() {
         return driver;
     }

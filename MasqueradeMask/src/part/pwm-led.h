@@ -16,12 +16,14 @@ public:
 
     void setBrightness(int brightness) {
         analogWrite(pin, brightness);
+        value = brightness;
     }
 
     uint getBrightness() {
-        return analogRead(pin);
+        return value;
     }
 
 private:
     uint pin;
+    uint value = 0;
 };
