@@ -54,7 +54,7 @@ public:
     void setRoutine(const char* name) {
         for (uint i = 0; i < routineCount; i++) {
             // Change routine
-            if (routines[i]->name() == name) {
+            if (strcmp(routines[i]->name(), name) == 0) {
                 setRoutine(routines[i]);
                 return;
             }

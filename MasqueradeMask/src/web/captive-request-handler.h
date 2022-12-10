@@ -7,7 +7,7 @@ public:
 
   bool canHandle(AsyncWebServerRequest *request){
 
-    if (strcmp(request->host().c_str(), "butts.com")) {
+    if (strcmp(request->host().c_str(), "masquerade.com")) {
         return true;
     }
 
@@ -16,6 +16,6 @@ public:
   }
 
   void handleRequest(AsyncWebServerRequest *request) {
-    request->send(200, "text/html", "<script>location.href='http://butts.com';</script>");
+    request->send(200, "text/html", "<script>location.href='http://masquerade.com';</script>");
   }
 };

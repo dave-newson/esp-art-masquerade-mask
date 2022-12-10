@@ -72,7 +72,7 @@ DisplayMini displayMini(&u8g2);
 
 // Routines ---------------------------------------------------
 #include "routines/routines.h"
-#define ROUTINE_COUNT 2
+#define ROUTINE_COUNT 3
 Routine* routines[ROUTINE_COUNT];
 RoutineController routineController(routines, ROUTINE_COUNT);
 
@@ -94,6 +94,9 @@ TestRoutines testRoutine(
 #include "routines/routine-two.h"
 RoutineTwo routineTwo(&displayMini);
 
+#include "routines/wom-routine.h"
+WomRoutine womRoutine(&displayMini, &fins, &stripLeft, &stripRight, &lensLed1, &lensLed2, &lensLed3, &batteryGlow, &eyeGlow, &finsGlow);
+
 // Webserver --------------------------------------------------
 #include "ESPAsyncWebServer.h"
 AsyncWebServer webServer(80);
@@ -102,17 +105,17 @@ AsyncWebServer webServer(80);
 #include "web/eyeball-api.h"
 EyeballApi eyeballApi;
 #include "web/fin-api.h"
-FinApi finApi;
+FinApi finApi(&fins);
 #include "web/head-sides-api.h"
 HeadSidesApi headSidesApi;
 #include "web/lens-lights-api.h"
 LensLightsApi lensLightsApi;
 #include "web/mini-display-api.h"
-MiniDisplayApi miniDisplayApi;
+MiniDisplayApi miniDisplayApi(&displayMini);
 #include "web/misc-api.h"
 MiscApi miscApi;
 #include "web/routines-api.h"
-RoutinesApi routinesApi;
+RoutinesApi routinesApi(&routineController);
 #include "web/index-page.h"
 IndexPage indexPage;
 #include "web/not-found-handler.h"
@@ -195,9 +198,11 @@ void setup() {
   // Routines
   routines[0] = &testRoutine;
   routines[1] = &routineTwo;
+  routines[2] = &womRoutine;
 
   routineController.begin();
   routineController.setRoutine(&testRoutine);
+  routineController.setRoutine(&womRoutine);
 
   // Wifi + DNS
   wifiService.begin();
@@ -237,8 +242,6 @@ void tickDebugLed()
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 }
 
-Chrono timer;
-
 void loop() {
   tickDebugLed();
   dnsServer.processNextRequest();
@@ -247,11 +250,4 @@ void loop() {
   // Component ticks
   displayMini.tick();
   ledStrip.tick();
-
-  if (timer.elapsed() > 10000) {
-    timer.restart();
-    timer.stop();
-
-    routineController.setRoutine("test-two");
-  }
 }
