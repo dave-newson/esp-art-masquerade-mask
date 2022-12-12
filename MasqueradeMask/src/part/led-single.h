@@ -15,8 +15,8 @@ public:
         setColor(CRGB::Black);        
     };
 
-    void setColor(uint32_t colorcode) {
-        ledStrip->setColor(lightNum, colorcode);
+    void setColor(const struct CRGB& color) {
+        ledStrip->setColor(lightNum, color);
     }
 
     uint32_t getColor() {

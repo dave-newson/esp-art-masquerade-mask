@@ -51,8 +51,8 @@ Fins fins(servo, SERVO_COUNT);
 LedStrip ledStrip(leds, LED_NUM);
 
 #include "part/led-series.h"
-LedSeries stripLeft(&ledStrip, 10, 20);
-LedSeries stripRight(&ledStrip, 20, 30);
+LedSeries stripLeft(&ledStrip, 11, 20);
+LedSeries stripRight(&ledStrip, 21, 30);
 
 #include "part/led-single.h"
 LedSingle lensLed1(&ledStrip, 1);
@@ -202,7 +202,6 @@ void setup() {
 
   routineController.begin();
   routineController.setRoutine(&testRoutine);
-  routineController.setRoutine(&womRoutine);
 
   // Wifi + DNS
   wifiService.begin();

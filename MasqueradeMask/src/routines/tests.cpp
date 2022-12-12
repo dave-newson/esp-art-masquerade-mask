@@ -48,6 +48,10 @@ void TestRoutines::setup()
     timer6.start();
 }
 
+void TestRoutines::before()
+{
+  displayMini->getDriver()->clear();
+}
 
 void TestRoutines::tickLeds()
 {
@@ -67,6 +71,9 @@ void TestRoutines::tickLeds()
     eyeGlow->setBrightness(0);
     finsGlow->setBrightness(0);
   }
+  lensLed1->setColor(CRGB( batteryGlow->getBrightness(), eyeGlow->getBrightness(), finsGlow->getBrightness()));
+  lensLed2->setColor(CRGB( eyeGlow->getBrightness(), finsGlow->getBrightness(), batteryGlow->getBrightness()));
+  lensLed3->setColor(CRGB( finsGlow->getBrightness(), batteryGlow->getBrightness(), eyeGlow->getBrightness()));
 }
 
 void TestRoutines::tickLedStrip()

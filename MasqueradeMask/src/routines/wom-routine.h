@@ -47,6 +47,11 @@ public:
             led4->setBrightness(ledBrightness);
             led5->setBrightness(ledBrightness);
             led6->setBrightness(ledBrightness);
+
+            left->setAll(CRGB(ledBrightness, 0, 0));
+            right->setAll(CRGB(0, ledBrightness, 0));
+            fins->setAllAngle(servoAngle);
+
         }
 
         if (ledBrightness > 255) {
@@ -73,4 +78,5 @@ private:
     Chrono timer;
     int direction = 1;
     int ledBrightness = 0;
+    uint servoAngle = 0;
 };

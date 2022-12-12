@@ -21,9 +21,9 @@ public:
         }
     }
 
-    void setColor(uint led, uint32_t colorcode) {
+    void setColor(uint led, const struct CRGB& color) {
         if (led > ledsCount) return;
-        leds[led] = colorcode;
+        leds[led] = color;
         isDirty = true;
     }
 

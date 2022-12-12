@@ -28,6 +28,7 @@ public:
 
     const char* name();
     void setup();
+    void before();
 
     void tick() {
         tickDisplayEye();

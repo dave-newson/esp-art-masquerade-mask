@@ -16,14 +16,14 @@ public:
         setAll(CRGB::Black);
     }
 
-    void setColor(uint led, uint32_t colorcode) {
+    void setColor(uint led, const struct CRGB& color) {
         if (led > getCount()) return;
-        ledStrip->setColor(start + led, colorcode);
+        ledStrip->setColor(start + led, color);
     }
 
-    void setAll(uint32_t colorcode) {
+    void setAll(const struct CRGB& color) {
         for (uint i = 0; i < getCount(); i++) {
-            setColor(i, colorcode);
+            setColor(i, color);
         }
     }
 
