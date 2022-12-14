@@ -63,9 +63,9 @@ public:
             rightLow->setAll(CRGB(0, ledBrightness, 0));
         }
 
-        if (ledBrightness > 255) {
+        if (ledBrightness >= 255) {
             direction = -1;
-        } else if (ledBrightness < 0) {
+        } else if (ledBrightness < 1) {
             direction = 1;
         }
 

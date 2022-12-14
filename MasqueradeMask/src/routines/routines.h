@@ -21,6 +21,8 @@ private:
 
     uint routineCount;
 
+    uint current = 0;
+
     Routine* active;
 
 public:
@@ -42,6 +44,10 @@ public:
     }
 
     void setRoutine(Routine* routine) {
+        if (routine == nullptr) {
+            return;
+        }
+
         if (active) {
             active->after();
         }
@@ -55,9 +61,17 @@ public:
         for (uint i = 0; i < routineCount; i++) {
             // Change routine
             if (strcmp(routines[i]->name(), name) == 0) {
+                current = i;
                 setRoutine(routines[i]);
                 return;
             }
         }
+    }
+
+    void next() {
+        current++;
+        current = (current >= routineCount) ? 0 : current;
+        Routine* next = routines[current];
+        setRoutine(next);
     }
 };

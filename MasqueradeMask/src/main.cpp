@@ -22,10 +22,10 @@ CRGB leds[LED_NUM];
 #define PIN_LED_2 4
 
 #include "part/button-touch.h"
-#define PIN_BUTTON_A 12
-#define PIN_BUTTON_B 32
-ButtonTouch buttonA(PIN_BUTTON_A, 20);
-ButtonTouch buttonB(PIN_BUTTON_B, 20);
+#define PIN_BUTTON_RIGHT 12
+#define PIN_BUTTON_LEFT 32
+ButtonTouch buttonRight(PIN_BUTTON_RIGHT, 20);
+ButtonTouch buttonLeft(PIN_BUTTON_LEFT, 20);
 
 // Circular Display Graphics
 #include <U8g2lib.h>
@@ -63,6 +63,9 @@ DisplayEye displayEye(gfx);
 
 #include "part/display-mini.h"
 DisplayMini displayMini(&u8g2);
+
+#include "services/hardware.h"
+Hardware hardware;
 
 // Routines ---------------------------------------------------
 #include "routines/routines.h"
@@ -140,7 +143,22 @@ void setup() {
   }
 */
 
-//  FastLED.setMaxPowerInVoltsAndMilliamps(LED_VOLTS, LED_MAX_MA);
+  // Populate hardware
+  hardware.batteryGlow = &batteryGlow;
+  hardware.buttonLeft = &buttonLeft;
+  hardware.buttonRight = &buttonRight;
+  hardware.displayMini = &displayMini;
+  hardware.eyeGlow = &eyeGlow;
+  hardware.ledStrip = &ledStrip;
+  hardware.lensLed1 = &lensLed1;
+  hardware.lensLed2 = &lensLed2;
+  hardware.lensLed3 = &lensLed3;
+  hardware.stripLeft = &stripLeft;
+  hardware.stripRight = &stripRight;
+  hardware.stripLipLeft = &stripLeftLow;
+  hardware.stripLipRight = &stripRightLow;
+
+  // FastLED.setMaxPowerInVoltsAndMilliamps(LED_VOLTS, LED_MAX_MA);
   FastLED.addLeds<LED_TYPE,LED_DATA_PIN,LED_COLOR_ORDER>(leds, LED_NUM)
     .setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(10);
@@ -162,16 +180,17 @@ void setup() {
   displayMini.begin();
   stripLeft.begin();
   stripRight.begin();
-  buttonA.begin();
-  buttonA.setTouchCallback([]() {
-    Serial.println("Touch A");
+
+  buttonLeft.begin();
+  buttonLeft.setTouchCallback([]() {
+    routineController.next();
   });
 
-  buttonB.begin();
-  buttonB.setTouchCallback([]() {
+  buttonRight.begin();
+  buttonRight.setTouchCallback([]() {
     Serial.println("Touch B");
   });
-  buttonB.setHoldCallback([]() {
+  buttonRight.setHoldCallback([]() {
     Serial.println("Touch B: HOLD");
   }, 1000);
 
@@ -238,8 +257,5 @@ void loop() {
   routineController.tick();
  
   // Component ticks
-  displayMini.tick();
-  ledStrip.tick();
-  buttonA.tick();
-  buttonB.tick();
+  hardware.tick();
 }
