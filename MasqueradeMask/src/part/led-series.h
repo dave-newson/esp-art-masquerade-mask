@@ -6,10 +6,10 @@
 class LedSeries
 {
 public:
-    LedSeries(LedStrip* _ledStrip, uint _start, uint _end) {
+    LedSeries(LedStrip* _ledStrip, uint _start, uint _count) {
         ledStrip = _ledStrip;
         start = _start;
-        end = _end;
+        count = _count;
     };
 
     void begin() {
@@ -32,11 +32,11 @@ public:
     }
 
     uint getCount() {
-        return end - start;
+        return count;
     }
 
 private:
     LedStrip* ledStrip;
     uint start;
-    uint end;
+    uint count;
 };

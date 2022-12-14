@@ -18,18 +18,14 @@ CRGB leds[LED_NUM];
 #define PIN_TFT_CS DF_GFX_CS
 
 // PWM LED Pins
-#define PIN_LED_1 17
-#define PIN_LED_2 16
-#define PIN_LED_3 4
+#define PIN_LED_1 16
+#define PIN_LED_2 4
 
-// PWM Servo Pins
-#include <ESP32Servo.h>
-#define SERVO_COUNT 4
-Servo servo[SERVO_COUNT];
-#define PIN_SERVO1 27
-#define PIN_SERVO2 25
-#define PIN_SERVO3 32
-#define PIN_SERVO4 12
+#include "part/button-touch.h"
+#define PIN_BUTTON_A 12
+#define PIN_BUTTON_B 32
+ButtonTouch buttonA(PIN_BUTTON_A, 20);
+ButtonTouch buttonB(PIN_BUTTON_B, 20);
 
 // Circular Display Graphics
 #include <U8g2lib.h>
@@ -44,25 +40,23 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(PIN_TFT_DC, PIN_TFT_CS);
 Arduino_GFX *gfx = new Arduino_GC9A01(bus, 2 /* RST */, 0 /* rotation */, true /* IPS */);
 
 // Component Abstractions -------------------------------------
-#include "part/fins.h"
-Fins fins(servo, SERVO_COUNT);
-
 #include "part/led-strip.h"
 LedStrip ledStrip(leds, LED_NUM);
 
 #include "part/led-series.h"
-LedSeries stripLeft(&ledStrip, 11, 20);
-LedSeries stripRight(&ledStrip, 21, 30);
+LedSeries stripRight(&ledStrip, 0, 22); // 22
+LedSeries stripRightLow(&ledStrip, 22, 12); // 12
+LedSeries stripLeftLow(&ledStrip, 34, 12); // 12
+LedSeries stripLeft(&ledStrip, 46, 22); // 22
 
 #include "part/led-single.h"
-LedSingle lensLed1(&ledStrip, 1);
-LedSingle lensLed2(&ledStrip, 2);
-LedSingle lensLed3(&ledStrip, 3);
+LedSingle lensLed1(&ledStrip, 68);
+LedSingle lensLed2(&ledStrip, 69);
+LedSingle lensLed3(&ledStrip, 70);
 
 #include "part/pwm-led.h"
 PwmLed batteryGlow(PIN_LED_1);
 PwmLed eyeGlow(PIN_LED_2);
-PwmLed finsGlow(PIN_LED_3);
 
 #include "part/display-eye.h"
 DisplayEye displayEye(gfx);
@@ -83,10 +77,10 @@ TestRoutines testRoutine(
   &lensLed3,
   &batteryGlow,
   &eyeGlow,
-  &finsGlow,
   &stripLeft,
   &stripRight,
-  &fins,
+  &stripLeftLow,
+  &stripRightLow,
   &displayMini,
   &displayEye
 );
@@ -95,7 +89,7 @@ TestRoutines testRoutine(
 RoutineTwo routineTwo(&displayMini);
 
 #include "routines/wom-routine.h"
-WomRoutine womRoutine(&displayMini, &fins, &stripLeft, &stripRight, &lensLed1, &lensLed2, &lensLed3, &batteryGlow, &eyeGlow, &finsGlow);
+WomRoutine womRoutine(&displayMini, &stripLeft, &stripRight, &stripLeftLow, &stripRightLow, &lensLed1, &lensLed2, &lensLed3, &batteryGlow, &eyeGlow);
 
 // Webserver --------------------------------------------------
 #include "ESPAsyncWebServer.h"
@@ -104,8 +98,6 @@ AsyncWebServer webServer(80);
 // HTTP APIs
 #include "web/eyeball-api.h"
 EyeballApi eyeballApi;
-#include "web/fin-api.h"
-FinApi finApi(&fins);
 #include "web/head-sides-api.h"
 HeadSidesApi headSidesApi;
 #include "web/lens-lights-api.h"
@@ -148,17 +140,6 @@ void setup() {
   }
 */
 
-  // Peripherals
-  pinMode(PIN_SERVO1, OUTPUT);
-  pinMode(PIN_SERVO2, OUTPUT);
-  pinMode(PIN_SERVO3, OUTPUT);
-  pinMode(PIN_SERVO4, OUTPUT);
-
-  servo[0].attach(PIN_SERVO1);
-  servo[1].attach(PIN_SERVO2);
-  servo[2].attach(PIN_SERVO3);
-  servo[3].attach(PIN_SERVO4);
-
 //  FastLED.setMaxPowerInVoltsAndMilliamps(LED_VOLTS, LED_MAX_MA);
   FastLED.addLeds<LED_TYPE,LED_DATA_PIN,LED_COLOR_ORDER>(leds, LED_NUM)
     .setCorrection(TypicalLEDStrip);
@@ -173,7 +154,6 @@ void setup() {
   gfx->begin();
 
   // Components
-  fins.begin();
   ledStrip.begin();
   lensLed1.begin();
   lensLed2.begin();
@@ -182,6 +162,18 @@ void setup() {
   displayMini.begin();
   stripLeft.begin();
   stripRight.begin();
+  buttonA.begin();
+  buttonA.setTouchCallback([]() {
+    Serial.println("Touch A");
+  });
+
+  buttonB.begin();
+  buttonB.setTouchCallback([]() {
+    Serial.println("Touch B");
+  });
+  buttonB.setHoldCallback([]() {
+    Serial.println("Touch B: HOLD");
+  }, 1000);
 
   u8g2.clearBuffer();					// clear the internal memory
   u8g2.setFont(u8g2_font_profont11_tf);	// choose a suitable font
@@ -210,13 +202,12 @@ void setup() {
   webServer.addHandler(&captiveRequestHandler).setFilter(ON_AP_FILTER);//only when requested from AP
 
   // Attach HTTP Handlers
-  eyeballApi.attach(&webServer);;
-  finApi.attach(&webServer);;
-  headSidesApi.attach(&webServer);;
-  lensLightsApi.attach(&webServer);;
-  miniDisplayApi.attach(&webServer);;
-  miscApi.attach(&webServer);;
-  routinesApi.attach(&webServer);;
+  eyeballApi.attach(&webServer);
+  headSidesApi.attach(&webServer);
+  lensLightsApi.attach(&webServer);
+  miniDisplayApi.attach(&webServer);
+  miscApi.attach(&webServer);
+  routinesApi.attach(&webServer);
   indexPage.attach(&webServer);
   notFoundHandler.attach(&webServer);
 
@@ -249,4 +240,6 @@ void loop() {
   // Component ticks
   displayMini.tick();
   ledStrip.tick();
+  buttonA.tick();
+  buttonB.tick();
 }
