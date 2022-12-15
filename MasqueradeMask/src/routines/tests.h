@@ -2,49 +2,23 @@
 
 #include "routines.h"
 #include "Chrono.h"
-#include "../part/display-eye.h"
-#include "../part/display-mini.h"
-#include "../part/led-series.h"
-#include "../part/led-single.h"
-#include "../part/pwm-led.h"
+#include "../services/hardware.h"
 
 class TestRoutines : public Routine
 {
 public:
-    TestRoutines(
-        LedSingle* _lensLed1,
-        LedSingle* _lensLed2,
-        LedSingle* _lensLed3,
-        PwmLed* _batteryGlow,
-        PwmLed* _eyeGlow,
-        LedSeries* _stripLeft,
-        LedSeries* _stripRight,
-        LedSeries* _stripLeftLow,
-        LedSeries* _stripRightLow,
-        DisplayMini* _displayMini,
-        DisplayEye* _displayEye
-)
-{
-        lensLed1 = _lensLed1;
-        lensLed2 = _lensLed2;
-        lensLed3 = _lensLed3;
-        batteryGlow = _batteryGlow;
-        eyeGlow = _eyeGlow;
-        stripLeft = _stripLeft;
-        stripRight = _stripRight;
-        stripLeftLow = _stripLeftLow;
-        stripRightLow = _stripRightLow;
-        displayMini = _displayMini;
-        displayEye = _displayEye;
-}
+    TestRoutines(Hardware* _hardware)
+    {
+        hardware = _hardware;
+    }
 
     const char* name() {
         return "test";
     };
 
     void setup() {
-        posX=random(0, displayEye->getDriver()->width());
-        posY=random(0, displayEye->getDriver()->height());
+//        posX=random(0, hardware->displayEye->getDriver()->width());
+//        posY=random(0, hardware->displayEye->getDriver()->height());
 
         timer0.start();
         timer1.start();
@@ -56,11 +30,11 @@ public:
     };
 
     void before() {
-          displayMini->getDriver()->clear();
+          hardware->reset();
     };
 
     void tick() {
-        tickDisplayEye();
+//        tickDisplayEye();
         tickDisplayMini();
         tickLedStrip();
         tickLeds();
@@ -81,50 +55,50 @@ private:
         scaleY=max(scaleY, 2);
 
         posX+=random(-5, 5);
-        posX=min(posX, (int) displayEye->getDriver()->width());
+        posX=min(posX, (int) hardware->displayEye->getDriver()->width());
         posX=max(posX, 0);
 
         posY+=random(-5, 5);
-        posY=min(posY, (int) displayEye->getDriver()->height());
+        posY=min(posY, (int) hardware->displayEye->getDriver()->height());
         posY=max(posY, 0);
 
         timer2.restart();
-        displayEye->getDriver()->fillScreen(random(0xffff));
-        displayEye->getDriver()->setCursor(posX, posY);
-        displayEye->getDriver()->setTextColor(random(0xffff), random(0xffff));
-        displayEye->getDriver()->setTextSize(scaleX /* x scale */, scaleY /* y scale */, 4 /* pixel_margin */);
-        displayEye->getDriver()->println("Hello World!");
+        hardware->displayEye->getDriver()->fillScreen(random(0xffff));
+        hardware->displayEye->getDriver()->setCursor(posX, posY);
+        hardware->displayEye->getDriver()->setTextColor(random(0xffff), random(0xffff));
+        hardware->displayEye->getDriver()->setTextSize(scaleX /* x scale */, scaleY /* y scale */, 4 /* pixel_margin */);
+        hardware->displayEye->getDriver()->println("Hello World!");
     }
 
     void tickDisplayMini() {
-        if (timer4.elapsed() < 100) {
+        if (timer4.elapsed() < 10) {
             return;
         }
         timer4.restart();
 
-            displayMini->getDriver()->clearBuffer();					// clear the internal memory
+        hardware->displayMini->getDriver()->clearBuffer();					// clear the internal memory
         char buf[16];
-        sprintf(buf, "%lu", millis() / 1000);
-        displayMini->getDriver()->drawStr(0, 7, buf);
+        sprintf(buf, "%lu", millis() / 100);
+        hardware->displayMini->getDriver()->drawStr(0, 7, buf);
     };
 
     void tickLedStrip() {
-        if (timer5.elapsed() < 500) {
+        if (timer5.elapsed() < 100) {
             return;
         }
         timer5.restart();
 
-        stripLeft->setColor(led, CRGB::White);
-        stripRight->setColor(led, CRGB::White);
-        stripLeftLow->setColor(led, CRGB::White);
-        stripRightLow->setColor(led, CRGB::White);
+        hardware->stripLeft->setColor(led, CRGB::White);
+        hardware->stripRight->setColor(led, CRGB::White);
+        hardware->stripLipLeft->setColor(led, CRGB::White);
+        hardware->stripLipRight->setColor(led, CRGB::White);
         led++;
 
-        if (led > stripLeft->getCount()) {
-            stripLeft->setAll(CRGB::Black);
-            stripRight->setAll(CRGB::Black);
-            stripLeftLow->setAll(CRGB::Black);
-            stripRightLow->setAll(CRGB::Black);
+        if (led > hardware->stripLeft->getCount()) {
+            hardware->stripLeft->setAll(CRGB::Black);
+            hardware->stripRight->setAll(CRGB::Black);
+            hardware->stripLipLeft->setAll(CRGB::Black);
+            hardware->stripLipRight->setAll(CRGB::Black);
             led = 0;
         }
     }
@@ -135,40 +109,26 @@ private:
         }
         timer6.restart();
 
-        if (batteryGlow->getBrightness() < 255) {
-            batteryGlow->setBrightness(batteryGlow->getBrightness() + 1);
-        } else if (eyeGlow->getBrightness() < 255) {
-            eyeGlow->setBrightness(eyeGlow->getBrightness() + 1);
+        if (hardware->batteryGlow->getBrightness() < 255) {
+            hardware->batteryGlow->setBrightness(hardware->batteryGlow->getBrightness() + 1);
+        } else if (hardware->eyeGlow->getBrightness() < 255) {
+            hardware->eyeGlow->setBrightness(hardware->eyeGlow->getBrightness() + 1);
         } else {
-            batteryGlow->setBrightness(0);
-            eyeGlow->setBrightness(0);
+            hardware->batteryGlow->setBrightness(0);
+            hardware->eyeGlow->setBrightness(0);
         }
 
-        lensLed1->setColor(CRGB( batteryGlow->getBrightness(), eyeGlow->getBrightness(), 255));
-        lensLed2->setColor(CRGB( eyeGlow->getBrightness(), 255, batteryGlow->getBrightness()));
-        lensLed3->setColor(CRGB( 255, batteryGlow->getBrightness(), eyeGlow->getBrightness()));
-        }
+        hardware->lensLed1->setColor(CRGB( hardware->batteryGlow->getBrightness(), hardware->eyeGlow->getBrightness(), 255));
+        hardware->lensLed2->setColor(CRGB( hardware->eyeGlow->getBrightness(), 255, hardware->batteryGlow->getBrightness()));
+        hardware->lensLed3->setColor(CRGB( 255, hardware->batteryGlow->getBrightness(), hardware->eyeGlow->getBrightness()));
+    }
 
+    Hardware* hardware;
 
-    PwmLed* batteryGlow;
-    PwmLed* eyeGlow;
-
-    LedSingle* lensLed1;
-    LedSingle* lensLed2;
-    LedSingle* lensLed3;
-
-    DisplayEye* displayEye;
     int posX=0;
     int posY=0;
     int scaleX=2;
     int scaleY=2;
-
-    DisplayMini* displayMini;
-    
-    LedSeries* stripLeft;
-    LedSeries* stripRight;
-    LedSeries* stripLeftLow;
-    LedSeries* stripRightLow;
     int led=0;
 
     Chrono timer0;

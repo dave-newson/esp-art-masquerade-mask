@@ -69,30 +69,27 @@ Hardware hardware;
 
 // Routines ---------------------------------------------------
 #include "routines/routines.h"
-#define ROUTINE_COUNT 3
+#define ROUTINE_COUNT 6
 Routine* routines[ROUTINE_COUNT];
 RoutineController routineController(routines, ROUTINE_COUNT);
 
 #include "routines/tests.h"
-TestRoutines testRoutine(
-  &lensLed1,
-  &lensLed2,
-  &lensLed3,
-  &batteryGlow,
-  &eyeGlow,
-  &stripLeft,
-  &stripRight,
-  &stripLeftLow,
-  &stripRightLow,
-  &displayMini,
-  &displayEye
-);
+TestRoutines testRoutine(&hardware);
 
-#include "routines/routine-two.h"
-RoutineTwo routineTwo(&displayMini);
+#include "routines/hello-world.h"
+HelloWorldRoutine helloWorldRoutine(&hardware);
 
 #include "routines/wom-routine.h"
-WomRoutine womRoutine(&displayMini, &stripLeft, &stripRight, &stripLeftLow, &stripRightLow, &lensLed1, &lensLed2, &lensLed3, &batteryGlow, &eyeGlow);
+WomRoutine womRoutine(&hardware);
+
+#include "routines/police.h"
+PoliceRoutine policeRoutine(&hardware);
+
+#include "routines/christmas.h"
+ChristmasRoutine christmasRoutine(&hardware);
+
+#include "routines/rainbow.h"
+RainbowRoutine rainbowRoutine(&hardware);
 
 // Webserver --------------------------------------------------
 #include "ESPAsyncWebServer.h"
@@ -148,6 +145,7 @@ void setup() {
   hardware.buttonLeft = &buttonLeft;
   hardware.buttonRight = &buttonRight;
   hardware.displayMini = &displayMini;
+  hardware.displayEye = &displayEye;
   hardware.eyeGlow = &eyeGlow;
   hardware.ledStrip = &ledStrip;
   hardware.lensLed1 = &lensLed1;
@@ -188,7 +186,7 @@ void setup() {
 
   buttonRight.begin();
   buttonRight.setTouchCallback([]() {
-    Serial.println("Touch B");
+    rainbowRoutine.changeSpeed();
   });
   buttonRight.setHoldCallback([]() {
     Serial.println("Touch B: HOLD");
@@ -208,11 +206,14 @@ void setup() {
 
   // Routines
   routines[0] = &testRoutine;
-  routines[1] = &routineTwo;
+  routines[1] = &helloWorldRoutine;
   routines[2] = &womRoutine;
+  routines[3] = &christmasRoutine;
+  routines[4] = &rainbowRoutine;
+  routines[5] = &policeRoutine;
 
   routineController.begin();
-  routineController.setRoutine(&testRoutine);
+  routineController.setRoutine(&rainbowRoutine);
 
   // Wifi + DNS
   wifiService.begin();
