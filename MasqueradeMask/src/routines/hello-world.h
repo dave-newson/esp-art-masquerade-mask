@@ -17,13 +17,41 @@ public:
 
     void before() {
         hardware->reset();
-        hardware->displayMini->getDriver()->drawStr(0, 7, "Hello World");
+        color = CRGB::White;
     }
 
     void tick() {
-        // Noop
+        if (!isDirty) {
+            return;
+        }
+
+        hardware->displayMini->getDriver()->drawStr(0, 7, "Hello World");
+        hardware->batteryGlow->setBrightness(255);
+        hardware->eyeGlow->setBrightness(255);
+        hardware->lensLed1->setColor(color);
+        hardware->lensLed2->setColor(color);
+        hardware->lensLed3->setColor(color);
+        hardware->stripLeft->setAll(color);
+        hardware->stripRight->setAll(color);
+        hardware->stripLipLeft->setAll(color);
+        hardware->stripLipRight->setAll(color);
+
+    }
+
+    void changeColor()
+    {
+        CHSV hsv;
+        hsv.hue = random(255);
+        hsv.val = 255;
+        hsv.sat = 240;
+
+        color = hsv;
+        isDirty = true;
     }
 
 private:
     Hardware* hardware;
+
+    bool isDirty = true;
+    CRGB color = CRGB::White;
 };

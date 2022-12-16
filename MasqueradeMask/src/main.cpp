@@ -69,9 +69,12 @@ Hardware hardware;
 
 // Routines ---------------------------------------------------
 #include "routines/routines.h"
-#define ROUTINE_COUNT 7
+#define ROUTINE_COUNT 8
 Routine* routines[ROUTINE_COUNT];
 RoutineController routineController(routines, ROUTINE_COUNT);
+
+#include "routines/standby.h"
+StandbyRoutine standbyRoutine(&hardware);
 
 #include "routines/tests.h"
 TestRoutines testRoutine(&hardware);
@@ -190,6 +193,7 @@ void setup() {
   buttonRight.begin();
   buttonRight.setTouchCallback([]() {
     rainbowRoutine.changeSpeed();
+    helloWorldRoutine.changeColor();
   });
   buttonRight.setHoldCallback([]() {
     Serial.println("Touch B: HOLD");
@@ -208,16 +212,17 @@ void setup() {
   gfx->println("BOOTING");
 
   // Routines
-  routines[0] = &helloWorldRoutine;
-  routines[1] = &testRoutine;
-  routines[2] = &womRoutine;
-  routines[3] = &christmasRoutine;
-  routines[4] = &fakeSpectrumRoutine;
-  routines[5] = &rainbowRoutine;
-  routines[6] = &policeRoutine;
+  routines[0] = &standbyRoutine;
+  routines[1] = &helloWorldRoutine;
+  routines[2] = &testRoutine;
+  routines[3] = &womRoutine;
+  routines[4] = &christmasRoutine;
+  routines[5] = &fakeSpectrumRoutine;
+  routines[6] = &rainbowRoutine;
+  routines[7] = &policeRoutine;
 
   routineController.begin();
-  routineController.setRoutine(&helloWorldRoutine);
+  routineController.setRoutine(&standbyRoutine);
 
   // Wifi + DNS
   wifiService.begin();

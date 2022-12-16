@@ -26,34 +26,52 @@ public:
 
             char buf[16];
             sprintf(buf, "%lu", ledBrightness);
+            hardware->displayMini->getDriver()->clearBuffer();
             hardware->displayMini->getDriver()->drawStr(0, 7, buf);
 
-            hardware->lensLed1->setColor(ledBrightness);
-            hardware->lensLed2->setColor(ledBrightness);
-            hardware->lensLed3->setColor(ledBrightness);
             hardware->eyeGlow->setBrightness(ledBrightness);
             hardware->batteryGlow->setBrightness(ledBrightness);
+            
+            CRGB renderColor(color);
+            renderColor.subtractFromRGB(255 - ledBrightness);
 
-            hardware->stripLeft->setAll(CRGB(ledBrightness, 0, 0));
-            hardware->stripRight->setAll(CRGB(0, 0, ledBrightness));
-            hardware->stripLipLeft->setAll(CRGB(0, ledBrightness, 0));
-            hardware->stripLipRight->setAll(CRGB(0, ledBrightness, 0));
+            hardware->lensLed1->setColor(renderColor);
+            hardware->lensLed2->setColor(renderColor);
+            hardware->lensLed3->setColor(renderColor);
+
+            hardware->stripLeft->setAll(renderColor);
+            hardware->stripRight->setAll(renderColor);
+            hardware->stripLipLeft->setAll(renderColor);
+            hardware->stripLipRight->setAll(renderColor);
         }
 
         if (ledBrightness >= 255) {
             direction = -1;
         } else if (ledBrightness < 1) {
             direction = 1;
+            changeColor();
         }
 
         ledBrightness += direction;
     }
 
 private:
+
     Hardware* hardware;
 
     Chrono timer;
     int direction = 1;
-    int ledBrightness = 0;
+    uint ledBrightness = 0;
     uint servoAngle = 0;
+    CRGB color;
+
+    void changeColor()
+    {
+        CHSV hsv;
+        hsv.hue = random(255);
+        hsv.val = 255;
+        hsv.sat = 240;
+        color = hsv;
+    }
+
 };
