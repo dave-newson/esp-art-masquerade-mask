@@ -8,14 +8,12 @@ public:
     RoutinesApi(RoutineController* _routineController) {
         routineController = _routineController;
     }
-    
+
     void attach(AsyncWebServer* server)
     {
-        server->on("/api/routine", HTTP_GET, [&](AsyncWebServerRequest *request) {
-            if (request->hasParam("routine", false)) {
-                char routine[16];
-                request->getParam("routine", false)->value().toCharArray(routine, 16);
-                routineController->setRoutine(routine);
+        server->on("/api/routines", HTTP_GET, [&](AsyncWebServerRequest *request) {
+            if (request->hasParam("next", false)) {
+                routineController->next();
             }
 
             request->send(200, "application/json", "{}");

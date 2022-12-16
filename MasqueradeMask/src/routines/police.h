@@ -7,6 +7,7 @@
 
 #define FLASH_MS 50
 #define STYLE_CHANGE_MS 3000
+#define TEXT_CHANGE_MS 1500
 
 class PoliceRoutine : public Routine
 {
@@ -39,6 +40,7 @@ public:
         timerFlashes.restart();
         timerAlt.restart();
         timerStyle.restart();
+        timerText.restart();
     }
 
     void tick() {
@@ -67,9 +69,9 @@ public:
                 break;
             case flashStyle::flashSplitPair:
                 for (uint i=0; i < half; i++) {
-                    hardware->stripLeft->setColor(i, (altState ? (flashState ? CRGB::Blue : CRGB::Black) : CRGB::Black));
+                    hardware->stripLeft->setColor(half+i, (altState ? (flashState ? CRGB::Blue : CRGB::Black) : CRGB::Black));
+                    hardware->stripLeft->setColor(i, (altState ? CRGB::Black : (flashState ? CRGB::Blue : CRGB::Black)));
                     hardware->stripRight->setColor(i, (altState ? CRGB::Black : (flashState ? CRGB::Black : CRGB::Red)));
-                    hardware->stripLeft->setColor(half+i, (altState ? CRGB::Black : (flashState ? CRGB::Blue : CRGB::Black)));
                     hardware->stripRight->setColor(half+i, (altState ? (flashState ? CRGB::Black : CRGB::Red) : CRGB::Black));
                 }
                 break;
@@ -82,23 +84,23 @@ public:
         switch (textState) {
             case 0:
                 hardware->displayMini->getDriver()->clearBuffer();
-                hardware->displayMini->getDriver()->drawStr(0, 14, "WOOP WOOP");
+                hardware->displayMini->getDriver()->drawStr(0, 16, " WOOP WOOP");
                 break;
             case 1:
                 hardware->displayMini->getDriver()->clearBuffer();
                 hardware->displayMini->getDriver()->drawStr(0, 7,  "THAT'S THE");
-                hardware->displayMini->getDriver()->drawStr(0, 14, " SOUND OF ");
-                hardware->displayMini->getDriver()->drawStr(0, 21, "THE POLICE");
+                hardware->displayMini->getDriver()->drawStr(0, 16, " SOUND OF ");
+                hardware->displayMini->getDriver()->drawStr(0, 24, "THE POLICE");
                 break;
             case 2:
                 hardware->displayMini->getDriver()->clearBuffer();
-                hardware->displayMini->getDriver()->drawStr(0, 14, "WOOP WOOP");
+                hardware->displayMini->getDriver()->drawStr(0, 16, " WOOP WOOP");
                 break;
             case 3:
                 hardware->displayMini->getDriver()->clearBuffer();
                 hardware->displayMini->getDriver()->drawStr(0, 7,  "THAT'S THE ");
-                hardware->displayMini->getDriver()->drawStr(0, 14, " SOUND OF ");
-                hardware->displayMini->getDriver()->drawStr(0, 21, "THE  BEAST");
+                hardware->displayMini->getDriver()->drawStr(0, 16, " SOUND OF ");
+                hardware->displayMini->getDriver()->drawStr(0, 24, "THE  BEAST");
                 break;
         }
 
@@ -109,6 +111,10 @@ public:
             style++;
             style = (style > 3) ? 1 : style;
 
+        }
+
+        if (timerText.elapsed() > TEXT_CHANGE_MS) {
+            timerText.restart();
             textState++;
             textState = (textState > 3) ? 0 : textState;
         }
@@ -117,6 +123,7 @@ public:
 private:
     Hardware* hardware;
 
+    Chrono timerText;
     uint textState = 0;
 
     Chrono timerFlashes;

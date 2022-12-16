@@ -27,7 +27,7 @@ public:
         }
     }
 
-    uint32_t getColor(uint led) {
+    CRGB getColor(uint led) {
         return ledStrip->getColor(start + led);
     }
 

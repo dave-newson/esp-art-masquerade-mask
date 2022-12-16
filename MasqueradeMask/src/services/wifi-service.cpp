@@ -10,7 +10,7 @@ void WifiService::begin()
   IPAddress apIP(8,8,4,4); // The default android DNS
 
   WiFi.mode(WIFI_AP); 
-  WiFi.softAP("esp-captive");
+  WiFi.softAP("Masquerade");
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
 
 

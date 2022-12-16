@@ -47,6 +47,13 @@ public:
         for (i=0; i < hardware->stripRight->getCount(); i++) {
             hardware->stripRight->setColor(i, calcHue());
         }
+
+        hardware->batteryGlow->setBrightness(CRGB(hardware->stripRight->getColor(16)).r);
+        hardware->eyeGlow->setBrightness(CRGB(hardware->stripLeft->getColor(16)).g);
+
+        hardware->lensLed1->setColor(hardware->stripLeft->getColor(10));
+        hardware->lensLed2->setColor(hardware->stripLeft->getColor(16));
+        hardware->lensLed3->setColor(hardware->stripLeft->getColor(20));
     }
 
     void changeSpeed() {

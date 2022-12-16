@@ -19,7 +19,7 @@ public:
         ledStrip->setColor(lightNum, color);
     }
 
-    uint32_t getColor() {
+    CRGB getColor() {
         return ledStrip->getColor(lightNum);
     }
 

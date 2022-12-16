@@ -69,7 +69,7 @@ Hardware hardware;
 
 // Routines ---------------------------------------------------
 #include "routines/routines.h"
-#define ROUTINE_COUNT 6
+#define ROUTINE_COUNT 7
 Routine* routines[ROUTINE_COUNT];
 RoutineController routineController(routines, ROUTINE_COUNT);
 
@@ -90,6 +90,9 @@ ChristmasRoutine christmasRoutine(&hardware);
 
 #include "routines/rainbow.h"
 RainbowRoutine rainbowRoutine(&hardware);
+
+#include "routines/fake-spectrum.h"
+FakeSpectrumRoutine fakeSpectrumRoutine(&hardware);
 
 // Webserver --------------------------------------------------
 #include "ESPAsyncWebServer.h"
@@ -132,7 +135,7 @@ void setup() {
   Serial.begin(9600);
   Serial.println("booting...");
 
-  delay(1000);
+  delay(500);
 /*
   if(!LittleFS.begin()){
     Serial.println("An Error has occurred while mounting LittleFS");
@@ -194,8 +197,8 @@ void setup() {
 
   u8g2.clearBuffer();					// clear the internal memory
   u8g2.setFont(u8g2_font_profont11_tf);	// choose a suitable font
-  u8g2.drawStr(0, 7, "Hello");	 // write something to the internal memory
-  u8g2.drawStr(0, 14, "World...");
+  u8g2.drawStr(0, 7, "BOOTING");	 // write something to the internal memory
+  u8g2.drawStr(0, 16, "MASK");
   u8g2.sendBuffer();
 
   gfx->fillScreen(WHITE);
@@ -205,15 +208,16 @@ void setup() {
   gfx->println("BOOTING");
 
   // Routines
-  routines[0] = &testRoutine;
-  routines[1] = &helloWorldRoutine;
+  routines[0] = &helloWorldRoutine;
+  routines[1] = &testRoutine;
   routines[2] = &womRoutine;
   routines[3] = &christmasRoutine;
-  routines[4] = &rainbowRoutine;
-  routines[5] = &policeRoutine;
+  routines[4] = &fakeSpectrumRoutine;
+  routines[5] = &rainbowRoutine;
+  routines[6] = &policeRoutine;
 
   routineController.begin();
-  routineController.setRoutine(&rainbowRoutine);
+  routineController.setRoutine(&helloWorldRoutine);
 
   // Wifi + DNS
   wifiService.begin();

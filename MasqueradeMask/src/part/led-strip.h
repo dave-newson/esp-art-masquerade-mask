@@ -27,8 +27,8 @@ public:
         isDirty = true;
     }
 
-    uint32_t getColor(uint led) {
-        if (led > ledsCount) return 0x00;
+    CRGB getColor(uint led) {
+        if (led > ledsCount) return CRGB::Black;
         return leds[led];
     }
 
